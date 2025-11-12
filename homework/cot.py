@@ -7,6 +7,10 @@ class CoTModel(BaseLLM):
         Take a question and convert it into a chat template. The LLM will likely answer much
         better if you provide a chat template. self.tokenizer.apply_chat_template can help here
         """
+        messages = [
+          { "role": "system", "content" : ("You are a helpful assistant that performs unit conversions. Please think step by step and show your reasoning." 
+          + Put the final numeric answer inside <answer></answer> tags") }
+        ]
 
         raise NotImplementedError()
 
