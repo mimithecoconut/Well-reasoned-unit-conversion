@@ -8,12 +8,17 @@ class CoTModel(BaseLLM):
         better if you provide a chat template. self.tokenizer.apply_chat_template can help here
         """
         messages = [
-          { "role": "system", "content" : ("You are a helpful assistant that performs unit conversions. Please think step by step and show your reasoning." 
-          + Put the final numeric answer inside <answer></answer> tags") }
+          { "role": "system", "content" : ("You are a helpful assistant that performs unit conversions." 
+          + " Start with the original unit and think step by step and show your reasoning to get to the final unit." 
+          + " Be concise. Put the final numeric answer inside <answer></answer> tags.") },
+          { "role": "user", "content" : "Convert 1125 pounds to tons."}, 
+          { "role": "assistant", "content" : "1 pound = 0.0005 tons."
+          + " Multiply 1125 x 0.0005 = 0.5625. <answer>0.5625</answer>" },
+          { "role": "user", "content": question}
         ]
 
-        raise NotImplementedError()
-
+        return self.tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+    
 
 def load() -> CoTModel:
     return CoTModel()
