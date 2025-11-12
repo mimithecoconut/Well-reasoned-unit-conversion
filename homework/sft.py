@@ -1,5 +1,7 @@
 from .base_llm import BaseLLM
 from .data import Dataset, benchmark
+from peft import get_peft_model, LoraConfig, TaskType
+from transformers import Trainer, TrainingArguments
 
 
 def load() -> BaseLLM:
@@ -49,7 +51,13 @@ def format_example(prompt: str, answer: str) -> dict[str, str]:
     """
     Construct a question / answer pair. Consider rounding the answer to make it easier for the LLM.
     """
-    raise NotImplementedError()
+    try:
+      ans_float = float(answer)
+      answer_str = f"<answer>{round(ans_float, 4)}</answer>"
+    except Exception:
+      answer_str = f"<answer>{answer}</answer>"
+    
+    return {"question": prompt, "answer": answer_str}
 
 
 class TokenizedDataset:
@@ -75,10 +83,42 @@ class TokenizedDataset:
 
 
 def train_model(
-    output_dir: str,
+    output_dir: str = "homework/sft_model",
     **kwargs,
 ):
-    raise NotImplementedError()
+    base = BaseLLM()
+    lora_config = LoraConfig(
+      r = 8, 
+      lora_alpha = 32,
+      target_modules="all-linear",
+      bias="none",
+      task_type=TaskType.CAUSAL_LM
+    )
+    base.model = get_peft_model(base.model, lora_config)
+    if base.device == "cuda":
+      base.model.enable_input_require_grads() 
+
+    trainset = Dataset("train")
+    validset = Dataset("valid")
+    
+    train = TokenizedDataset(base.tokenizer, trainset, format_example)
+    valid = TokenizedDataset(base.tokenizer, validset, format_example)
+
+    training_args = TrainingArguments(
+      output_dir = output_dir, 
+      logging_dir = output_dir, 
+      report_to = "tensorboard",
+      per_device_train_batch_size = 32, 
+      num_train_epochs = 8,
+      learning_rate = 1e-3,
+      gradient_checkpointing = True,
+      save_strategy = "epoch"
+    )
+
+    trainer = Trainer(model=base.model, args=training_args, 
+    train_dataset=train, eval_dataset=valid)
+    trainer.train()
+    trainer.save_model(output_dir)
     test_model(output_dir)
 
 
