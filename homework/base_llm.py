@@ -109,12 +109,13 @@ class BaseLLM:
         max_new_tokens = 50 
         do_sample = temperature > 0 
 
+
         outputs = self.model.generate(input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"], 
         max_new_tokens=max_new_tokens, do_sample=do_sample, temperature =temperature if do_sample else None,
         num_return_sequences = num_return_sequences or 1, eos_token_id=self.tokenizer.eos_token_id)
 
         tokens =  outputs[:, len(inputs["input_ids"][0]) :]
-        decoded = self.tokenizer.batch_decode(tokens)
+        decoded = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
         
         return decoded
 
